@@ -237,6 +237,10 @@ typedef struct __mavlink_status {
     struct __mavlink_signing_streams *signing_streams; ///< global record of stream timestamps
 
 #ifdef MESL_CRYPTO
+    // User-defined variable for mavlink_mesl_crypto_condition.
+    //   Use this variable free.
+    //   One example is, set non-zero for globally enabled encryption.
+    uint8_t mesl_crypto_condition;
     // Buffer for payload crypto (MESL_CRYPTO).
     uint8_t mesl_crypto_buf[MAVLINK_MAX_PAYLOAD_LEN];
 #endif // #ifdef MESL_CRYPTO
