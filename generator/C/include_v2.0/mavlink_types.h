@@ -206,7 +206,12 @@ typedef enum {
     MAVLINK_FRAMING_INCOMPLETE=0,
     MAVLINK_FRAMING_OK=1,
     MAVLINK_FRAMING_BAD_CRC=2,
-    MAVLINK_FRAMING_BAD_SIGNATURE=3
+    MAVLINK_FRAMING_BAD_SIGNATURE=3,
+
+#ifdef MESL_CRYPTO
+    MAVLINK_FRAMING_BAD_MESL_DECRYPT=4,
+#endif // #ifdef MESL_CRYPTO
+
 } mavlink_framing_t;
 
 #define MAVLINK_STATUS_FLAG_IN_MAVLINK1  1 // last incoming packet was MAVLink1
@@ -230,6 +235,12 @@ typedef struct __mavlink_status {
     uint8_t signature_wait;             ///< number of signature bytes left to receive
     struct __mavlink_signing *signing;  ///< optional signing state
     struct __mavlink_signing_streams *signing_streams; ///< global record of stream timestamps
+
+#ifdef MESL_CRYPTO
+    // Buffer for payload crypto (MESL_CRYPTO).
+    uint8_t mesl_crypto_buf[MAVLINK_MAX_PAYLOAD_LEN];
+#endif // #ifdef MESL_CRYPTO
+
 } mavlink_status_t;
 
 /*
@@ -301,11 +312,35 @@ typedef struct __mavlink_msg_entry {
 	uint8_t target_component_ofs; // payload offset to target_component, or 0
 } mavlink_msg_entry_t;
 
+
+
+#ifdef MESL_CRYPTO
+// Method for payload crypto (MESL_CRYPTO).
+// Actual value should be 1 to 7,
+//   because this use 3 bits of 'incompat flags'.
+
+#define MESL_CRYPTO_METHOD_TEST            7
+
+#define BITMASK_MESL_CRYPTO_METHOD         0x07
+#define BITSHIFT_MESL_CRYPTO_METHOD        (8 - 3)
+#define BITMASK_MESL_CRYPTO_METHOD_IFLAG   0xe0
+
+#endif // #ifdef MESL_CRYPTO
+
+
+
 /*
   incompat_flags bits
  */
 #define MAVLINK_IFLAG_SIGNED  0x01
 #define MAVLINK_IFLAG_MASK    0x01 // mask of all understood bits
+
+#ifdef MESL_CRYPTO
+#define MAVLINK_IFLAG_MESL_CRYPTO_METHOD BITMASK_MESL_CRYPTO_METHOD_IFLAG
+                              // mask of all understood bits
+#undef MAVLINK_IFLAG_MASK
+#define MAVLINK_IFLAG_MASK    (MAVLINK_IFLAG_MESL_CRYPTO_METHOD | 0x01)
+#endif // #ifdef MESL_CRYPTO
 
 #ifdef MAVLINK_USE_CXX_NAMESPACE
 } // namespace mavlink
