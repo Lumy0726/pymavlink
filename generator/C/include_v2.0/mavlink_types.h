@@ -241,6 +241,9 @@ typedef struct __mavlink_status {
     //   Use this variable free.
     //   One example is, set non-zero for globally enabled encryption.
     uint8_t mesl_crypto_condition;
+    // Save MESL_CRYPTO_METHOD option.
+    //   Program can use this variable any way, or ignore this.
+    uint8_t mesl_crypto_method;
     // Buffer for payload crypto (MESL_CRYPTO).
     uint8_t mesl_crypto_buf[MAVLINK_MAX_PAYLOAD_LEN];
 #endif // #ifdef MESL_CRYPTO
@@ -323,7 +326,16 @@ typedef struct __mavlink_msg_entry {
 // Actual value should be 1 to 7,
 //   because this use 3 bits of 'incompat flags'.
 
-#define MESL_CRYPTO_METHOD_TEST            7
+#define MESL_CRYPTO_METHOD_AES128          1
+// 'MESL_CRYPTO_METHOD_AES128_RANDP'.
+// Before AES128, append original length (uint8_t),
+//   and random size random number padding.
+#define MESL_CRYPTO_METHOD_AES128_RANDP    2
+#define MESL_CRYPTO_METHOD_USER3           3
+#define MESL_CRYPTO_METHOD_USER4           4
+#define MESL_CRYPTO_METHOD_USER5           5
+#define MESL_CRYPTO_METHOD_USER6           6
+#define MESL_CRYPTO_METHOD_USER7           7
 
 #define BITMASK_MESL_CRYPTO_METHOD         0x07
 #define BITSHIFT_MESL_CRYPTO_METHOD        (8 - 3)
@@ -341,9 +353,9 @@ typedef struct __mavlink_msg_entry {
 
 #ifdef MESL_CRYPTO
 #define MAVLINK_IFLAG_MESL_CRYPTO_METHOD BITMASK_MESL_CRYPTO_METHOD_IFLAG
-                              // mask of all understood bits
 #undef MAVLINK_IFLAG_MASK
 #define MAVLINK_IFLAG_MASK    (MAVLINK_IFLAG_MESL_CRYPTO_METHOD | 0x01)
+                              // mask of all understood bits
 #endif // #ifdef MESL_CRYPTO
 
 #ifdef MAVLINK_USE_CXX_NAMESPACE
