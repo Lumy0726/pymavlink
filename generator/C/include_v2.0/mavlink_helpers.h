@@ -75,7 +75,15 @@ MAVLINK_HELPER uint8_t mavlink_mesl_crypto_condition(
 //           value should be 'MESL_CRYPTO_METHOD_XXX'.
 // @param  'len': payload length (can be 0).
 // @return Payload length after encryption.
-MAVLINK_HELPER uint8_t mavlink_mesl_encrypt(
+// @note   "input_len == 0 && output_len == 0",
+//           will be considered as non-encryption.
+//         But, "input len != 0 && output_len == 0",
+//           or "output_len < 0 || output_len > maxlen",
+//           will be considered as error,
+//           MAVLink frame will be sent with zero payload length,
+//           and receiving side can report error,
+//           because the length is zero but encryption iflag is set.
+MAVLINK_HELPER int32_t mavlink_mesl_encrypt(
 		uint8_t crypto_method,
 		const char *src,
 		char *dst,
@@ -88,14 +96,15 @@ MAVLINK_HELPER uint8_t mavlink_mesl_encrypt(
 // @param  'crypto_method': method for decryption,
 //           value can be 'MESL_CRYPTO_METHOD_XXX'.
 //         For invalid 'crypto_method',
-//           this function should return zero.
-// @param  'len': payload length (can be 0).
-// @return Payload length after decryption.
-//         Non-zero length before decryption,
-//           and zero length (return value) after decryption,
+//           this function should return '-1'.
+// @param  'len': payload length.
+//         If 'len' is zero,
+//           this function should return '-1'.
+// @return Payload length after decryption (zero is valid result).
+//         If "output_len < 0 || output_len > maxlen",
 //           will be considered as error,
 //           one example is for invalue 'crypto_method'.
-MAVLINK_HELPER uint8_t mavlink_mesl_decrypt(
+MAVLINK_HELPER int32_t mavlink_mesl_decrypt(
 		uint8_t crypto_method,
 		const char *src,
 		char *dst,
@@ -336,6 +345,7 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 
 #ifdef MESL_CRYPTO
 	uint8_t mesl_crypto_method;
+	int32_t encrypted_len;
 #endif // #ifdef MESL_CRYPTO
 
 	if (mavlink1) {
@@ -376,13 +386,28 @@ MAVLINK_HELPER uint16_t mavlink_finalize_message_buffer(mavlink_message_t* msg, 
 					(char*)status->mesl_crypto_buf,
 					_MAV_PAYLOAD(msg),
 					msg->len);
-			msg->len = mavlink_mesl_encrypt(
+			encrypted_len = mavlink_mesl_encrypt(
 					mesl_crypto_method,
 					(const char*)status->mesl_crypto_buf,
 					(char *)(_MAV_PAYLOAD_NON_CONST(msg)),
 					msg->len,
 					MAVLINK_MAX_PAYLOAD_LEN
 					);
+			if (msg->len == (uint8_t)0 && encrypted_len == (int32_t)0) {
+				// Zero length to zero length encryption.
+				// Consider as non-encryption.
+				msg->incompat_flags &= ~
+					((uint8_t)BITMASK_MESL_CRYPTO_METHOD_IFLAG);
+				msg->len = (uint8_t)0;
+			}
+			else if (encrypted_len <= (int32_t)0 ||
+					encrypted_len > (int32_t)MAVLINK_MAX_PAYLOAD_LEN) {
+				// zero length is error now (for rx side).
+				msg->len = (uint8_t)0;
+			}
+			else {
+				msg->len = (uint8_t)encrypted_len;
+			}
 		}
 	}
 #endif // #ifdef MESL_CRYPTO
@@ -474,6 +499,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 
 #ifdef MESL_CRYPTO
 	uint8_t mesl_crypto_method;
+	int32_t encrypted_len;
 #endif // #ifdef MESL_CRYPTO
 
         if (mavlink1) {
@@ -514,7 +540,7 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 		incompat_flags |= (mesl_crypto_method << BITSHIFT_MESL_CRYPTO_METHOD);
 		// encryption
 		if (mesl_crypto_method != (uint8_t)0) {
-			length = mavlink_mesl_encrypt(
+			encrypted_len = mavlink_mesl_encrypt(
 					mesl_crypto_method,
 					packet,
 					(char*)status->mesl_crypto_buf,
@@ -522,6 +548,21 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 					MAVLINK_MAX_PAYLOAD_LEN
 					);
 			packet = (const char*)(status->mesl_crypto_buf);
+			if (length == (uint8_t)0 && encrypted_len == (int32_t)0) {
+				// Zero length to zero length encryption.
+				// Consider as non-encryption.
+				incompat_flags &= ~
+					((uint8_t)BITMASK_MESL_CRYPTO_METHOD_IFLAG);
+				length = (uint8_t)0;
+			}
+			else if (encrypted_len <= (int32_t)0 ||
+					encrypted_len > (int32_t)MAVLINK_MAX_PAYLOAD_LEN) {
+				// zero length is error now (for rx side).
+				length = (uint8_t)0;
+			}
+			else {
+				length = (uint8_t)encrypted_len;
+			}
 		}
 #endif // #ifdef MESL_CRYPTO
 
@@ -1051,7 +1092,7 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 
 
 #ifdef MESL_CRYPTO
-		uint8_t decrypted_len = 0;
+		int32_t decrypted_len = 0;
 		uint8_t mesl_crypto_method;
 		if (status->msg_received == MAVLINK_FRAMING_OK) {
 			// CASE OF: Parsing include CRC and signature ended, successfully,
@@ -1072,13 +1113,17 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 						rxmsg->len,
 						MAVLINK_MAX_PAYLOAD_LEN
 						);
-				if (rxmsg->len != (uint8_t)0 && decrypted_len == (uint8_t)0) {
-					status->msg_received = MAVLINK_FRAMING_BAD_MESL_DECRYPT;
+				if (decrypted_len < (int32_t)0 ||
+						decrypted_len > (int32_t)MAVLINK_MAX_PAYLOAD_LEN) {
+					// CASE OF: error when doing decryption,
+					//            includes case for 'rxmsg->len == 0'.
+					rxmsg->len = (uint8_t)0;
 					_mav_parse_error(status);
 					status->parse_state = MAVLINK_PARSE_STATE_IDLE;
 				}
 				else {
-					rxmsg->len = decrypted_len;
+					// NOTE: decryption with non-zero len to zero len, can be valid.
+					rxmsg->len = (uint8_t)decrypted_len;
 				}
 			}
 		}
