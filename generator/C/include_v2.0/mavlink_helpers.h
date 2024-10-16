@@ -1099,9 +1099,10 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 			//            but not decryption.
 			mesl_crypto_method = (rxmsg->incompat_flags &
 					MAVLINK_IFLAG_MESL_CRYPTO_METHOD);
+			mesl_crypto_method = mesl_crypto_method >> BITSHIFT_MESL_CRYPTO_METHOD;
 			if (mesl_crypto_method) {
 				// CASE OF: Payload encrypted MAVLink frame.
-				mesl_crypto_method = mesl_crypto_method >> BITSHIFT_MESL_CRYPTO_METHOD;
+				status->mesl_crypto_method_rx = mesl_crypto_method;
 				memcpy(
 						(char*)status->mesl_crypto_buf,
 						_MAV_PAYLOAD(rxmsg),
@@ -1125,6 +1126,9 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 					// NOTE: decryption with non-zero len to zero len, can be valid.
 					rxmsg->len = (uint8_t)decrypted_len;
 				}
+			}
+			else if (rxmsg->len != (uint8_t)0) {
+				status->mesl_crypto_method_rx = mesl_crypto_method;
 			}
 		}
 #endif // #ifdef MESL_CRYPTO

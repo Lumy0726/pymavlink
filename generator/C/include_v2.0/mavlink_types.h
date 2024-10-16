@@ -244,6 +244,11 @@ typedef struct __mavlink_status {
     // Save MESL_CRYPTO_METHOD option.
     //   Program can use this variable any way, or ignore this.
     uint8_t mesl_crypto_method;
+    // Last 'MESL_CRYPTO_METHOD_XXX' value for receiving side.
+    // This is information variable, not setting variable.
+    // For MAVLink frame has payload length zero (encrypted & decrypted),
+    //   This value will not be updated.
+    uint8_t mesl_crypto_method_rx;
     // Buffer for payload crypto (MESL_CRYPTO).
     uint8_t mesl_crypto_buf[MAVLINK_MAX_PAYLOAD_LEN];
 #endif // #ifdef MESL_CRYPTO
