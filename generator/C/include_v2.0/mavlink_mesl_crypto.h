@@ -1,18 +1,18 @@
 
 /*
-Add␣crypto␣support␣for␣MAVLink␣C␣protocol␣2.0.
-␣␣Define␣'MESL_CRYPTO'␣for␣crypto␣support,␣when␣using.
-␣␣Implement␣some␣functions␣for␣crypto␣support,␣when␣using.
-␣␣␣␣'mavlink_mesl_crypto_condition'.
-␣␣␣␣'mavlink_mesl_encrypt'.
-␣␣␣␣'mavlink_mesl_decrypt'.
-Add␣some␣function␣for␣MAVLink␣debugging.
-␣␣Define␣'MESL_+MAVLINK_DEBUG'␣for␣debugging␣support,␣when␣using.
-␣␣␣␣Implement␣'mavlink_mesl_parse_result'.
-Fix␣some␣code␣for␣MAVLink␣parsing.
-␣␣To␣use␣fixed␣parsing␣way,␣define␣'MESL_MAVLINK_PARSE_FIX'.
-␣␣This␣will␣be␣automatically␣enabled␣if␣need,
-␣␣␣␣like␣when␣using␣crypto␣support.
+Add crypto support for MAVLink C protocol 2.0.
+  Define 'MESL_CRYPTO' for crypto support, when using.
+  Implement some functions for crypto support, when using.
+    'mavlink_mesl_crypto_condition'.
+    'mavlink_mesl_encrypt'.
+    'mavlink_mesl_decrypt'.
+Add some function for MAVLink debugging.
+  Define 'MESL_MAVLINK_DEBUG' for debugging support, when using.
+    Implement 'mavlink_mesl_parse_result'.
+Fix some code for MAVLink parsing.
+  To use fixed parsing way, define 'MESL_MAVLINK_PARSE_FIX'.
+  This will be automatically enabled if need,
+    like when using crypto support.
 */
 
 
