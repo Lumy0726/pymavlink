@@ -143,11 +143,6 @@ MAVLINK_HELPER void mesl_edit_mav_encrypt(
 ) {
 	uint8_t mesl_crypto_method;
 	int32_t encrypted_len;
-	bool mavlink1 = (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0;
-	if (mavlink1) {
-		// No support for mavlink protocol v1.0
-		return;
-	}
 	// crypto condition check.
 	if (status) {
 		mesl_crypto_method = mavlink_mesl_crypto_condition(
@@ -198,6 +193,13 @@ MAVLINK_HELPER void mesl_edit_mav_encrypt_case1(
 		mavlink_status_t* status,
 		mavlink_message_t* msg
 ) {
+	if (status) {
+		bool mavlink1 = (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0;
+		if (mavlink1) {
+			// No support for mavlink protocol v1.0
+			return;
+		}
+	}
 	mesl_edit_mav_encrypt(
 			status,
 			msg->msgid,
@@ -226,6 +228,13 @@ MAVLINK_HELPER void mesl_edit_mav_encrypt_case2(
 		uint8_t * incompat_flags_p,
 		const char* * payload_p // Should be the pointer of pointer
 ) {
+	if (status) {
+		bool mavlink1 = (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0;
+		if (mavlink1) {
+			// No support for mavlink protocol v1.0
+			return;
+		}
+	}
 	mesl_edit_mav_encrypt(
 			status,
 			msgid,
@@ -248,6 +257,11 @@ MAVLINK_HELPER void mesl_edit_mav_encrypt_case3(
 		char * payload_dst,
 		const char* * payload_result_addr // Should be the pointer of pointer
 ) {
+	bool mavlink1 = (msg->magic == MAVLINK_STX_MAVLINK1);
+	if (mavlink1) {
+		// No support for mavlink protocol v1.0
+		return;
+	}
 	if (
 			!((*incompat_flags_p) & MAVLINK_IFLAG_MESL_CRYPTO_METHOD)
 	) {
