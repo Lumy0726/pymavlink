@@ -118,6 +118,11 @@ typedef struct __mavlink_message {
 	uint64_t payload64[(MAVLINK_MAX_PAYLOAD_LEN+MAVLINK_NUM_CHECKSUM_BYTES+7)/8];
 	uint8_t ck[2];          ///< incoming checksum bytes
 	uint8_t signature[MAVLINK_SIGNATURE_BLOCK_LEN];
+#ifdef MESL_CRYPTO
+	// Flaged if 'current' payload of struct is encrypted.
+	// Not included MAVLink frame itself.
+	uint8_t mesl_curpl_encrypted;
+#endif // #ifdef MESL_CRYPTO
 }) mavlink_message_t;
 
 typedef enum {
