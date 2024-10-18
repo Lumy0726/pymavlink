@@ -212,8 +212,8 @@ MAVLINK_HELPER void mesl_edit_mav_encrypt_case1(
 			);
 	if (msg->incompat_flags & MAVLINK_IFLAG_MESL_CRYPTO_METHOD) {
 		memcpy(
-				(char*)status->mesl_crypto_buf,
-				_MAV_PAYLOAD(msg),
+				_MAV_PAYLOAD_NON_CONST(msg),
+				(const char*)status->mesl_crypto_buf,
 				msg->len);
 		msg->mesl_curpl_encrypted = (uint8_t)1;
 	}
