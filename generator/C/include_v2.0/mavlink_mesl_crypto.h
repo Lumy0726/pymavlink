@@ -17,6 +17,19 @@ Fix some code for MAVLink parsing.
 
 
 
+/*
+Add some performance debugging support for MAVLink C protocol 2.0.
+  Define 'MESL_MAV_TEBUG' macro for this support (TIME DEBUG).
+    Define below macro functions too.
+      'MESL_MAV_TEBUG_FI_SEND_START(status)'.
+      'MESL_MAV_TEBUG_SEND_END(status)'.
+      'MESL_MAV_TEBUG_PARSE_START(status)'.
+      'MESL_MAV_TEBUG_PARSE_END(status)'.
+    Type of 'status' will be 'mavlink_status_t*'.
+*/
+
+
+
 #ifdef MESL_CRYPTO
 #ifndef MESL_MAVLINK_PARSE_FIX
 #define MESL_MAVLINK_PARSE_FIX

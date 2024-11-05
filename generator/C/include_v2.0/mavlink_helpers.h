@@ -340,6 +340,9 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 	uint8_t signature[MAVLINK_SIGNATURE_BLOCK_LEN];
 	bool mavlink1 = (status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1) != 0;
 	bool signing = 	(!mavlink1) && status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING);
+#ifdef MESL_MAV_TEBUG
+MESL_MAV_TEBUG_FI_SEND_START(status);
+#endif
 
         if (mavlink1) {
             length = min_length;
@@ -408,6 +411,9 @@ MAVLINK_HELPER void _mav_finalize_message_chan_send(mavlink_channel_t chan, uint
 		_mavlink_send_uart(chan, (const char *)signature, signature_len);
 	}
 	MAVLINK_END_UART_SEND(chan, header_len + 3 + (uint16_t)length + (uint16_t)signature_len);
+#ifdef MESL_MAV_TEBUG
+MESL_MAV_TEBUG_SEND_END(status);
+#endif
 }
 
 /**
@@ -651,6 +657,9 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 			rxmsg->len = 0;
 			rxmsg->magic = c;
                         status->flags &= ~MAVLINK_STATUS_FLAG_IN_MAVLINK1;
+#ifdef MESL_MAV_TEBUG
+MESL_MAV_TEBUG_PARSE_START(status);
+#endif
 			mavlink_start_checksum(rxmsg);
 		} else if (c == MAVLINK_STX_MAVLINK1)
 		{
@@ -993,6 +1002,14 @@ MAVLINK_HELPER uint8_t mavlink_frame_char_buffer(mavlink_message_t* rxmsg,
 		mavlink_mesl_parse_result(rxmsg, status);
 	}
 #endif // #ifdef MESL_MAVLINK_DEBUG
+#ifdef MESL_MAV_TEBUG
+	if (
+			status->parse_state == MAVLINK_PARSE_STATE_IDLE &&
+			status->msg_received != MAVLINK_FRAMING_INCOMPLETE
+	) {
+		MESL_MAV_TEBUG_PARSE_END(rxmsg, status);
+	}
+#endif
 
 
 
